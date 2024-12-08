@@ -12,6 +12,7 @@ import mimetypes
 import re
 import argparse
 import base64
+import functools
 
 from io import BytesIO
 
@@ -261,20 +262,22 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--bind', '-b', default='', metavar='ADDRESS', help='Specify alternate bind address [default: all interfaces]')
+parser.add_argument('--dir', '-d', default=None, help='Working Dir')
 parser.add_argument('port', action='store', default=8000, type=int, nargs='?', help='Specify alternate port [default: 8000]')
 args = parser.parse_args()
 
 PORT = args.port
 BIND = args.bind
+DIR = args.dir
 HOST = BIND
 
 if HOST == '':
     HOST = 'localhost'
 
-Handler = SimpleHTTPRequestHandler
+#Handler = SimpleHTTPRequestHandler
+Handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=DIR)
 
-with socketserver.TCPServer((BIND, PORT), Handler) as httpd:
-    serve_message = "Serving HTTP on {host} port {port} (http://{host}:{port}/) ..."
-    print(serve_message.format(host=HOST, port=PORT))
+with http.server.HTTPServer((BIND, PORT), Handler) as httpd:
+    serve_message = "Serving HTTP on {host} port {port} (http://{host}:{port}/) in {directory}..."
+    print(serve_message.format(host=HOST, port=PORT, directory=DIR))
     httpd.serve_forever()
-    
